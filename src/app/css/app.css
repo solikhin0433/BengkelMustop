@@ -1,0 +1,83 @@
+.feature-card img {
+  width: 100%;
+  object-fit: cover;
+}
+
+.card-hover {
+  transition: box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+}
+
+.card-hover:hover img {
+  transform: scale(1.09);
+  transition: transform .2s;
+}
+
+.mySwiper .swiper-wrapper {
+    transition-timing-function: linear !important;
+    margin: 0 auto !important;
+}
+
+/* ==================== CUSTOM DUAL-RING LOADER ==================== */
+/* HTML: <div class="loader"></div> */
+.loader {
+  width: 48px;
+  aspect-ratio: 1;
+  display: grid;
+  border: 4px solid #0000;
+  border-radius: 50%;
+  border-color: #cbd5e1 #0000;
+  animation: l16 1s infinite linear;
+}
+
+.dark .loader {
+  border-color: #475569 #0000;
+}
+
+.loader::before,
+.loader::after {    
+  content: "";
+  grid-area: 1/1;
+  margin: 2px;
+  border: inherit;
+  border-radius: 50%;
+}
+
+.loader::before {
+  border-color: #f03355 #0000;
+  animation: inherit; 
+  animation-duration: .5s;
+  animation-direction: reverse;
+}
+
+.loader::after {
+  margin: 8px;
+}
+
+/* Size Modifiers */
+.loader-sm {
+  width: 22px;
+  border-width: 2.5px;
+}
+.loader-sm::after {
+  margin: 4px;
+}
+
+.loader-md {
+  width: 44px;
+  border-width: 3.5px;
+}
+.loader-md::after {
+  margin: 7px;
+}
+
+.loader-lg {
+  width: 58px;
+  border-width: 4.5px;
+}
+.loader-lg::after {
+  margin: 10px;
+}
+
+@keyframes l16 { 
+  100% { transform: rotate(1turn); }
+}

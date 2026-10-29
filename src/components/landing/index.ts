@@ -1,0 +1,12 @@
+export { default as Navbar } from "./Navbar";
+export { default as HeroSection } from "./HeroSection";
+export { default as ServicesSection } from "./ServicesSection";
+export { default as SparepartsSection } from "./SparepartsSection";
+export { default as WhyChooseUsSection } from "./WhyChooseUsSection";
+export { default as ProcessFlowSection } from "./ProcessFlowSection";
+export { default as TestimonialsSection } from "./TestimonialsSection";
+export { default as LocationSection } from "./LocationSection";
+export { default as FaqSection } from "./FaqSection";
+export { default as CtaSection } from "./CtaSection";
+export { default as Footer } from "./Footer";
+export * from "./data";
