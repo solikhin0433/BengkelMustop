@@ -85,7 +85,7 @@ const SidebarContent: MenuItem[] = [
   },
 
   {
-    heading: 'Katalog & Inventori',
+    heading: 'Data Master & Katalog',
     children: [
       {
         name: 'Jasa & Tarif Servis',
