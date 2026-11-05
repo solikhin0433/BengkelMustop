@@ -1,280 +1,183 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
-import {
-  Bike,
-  Search,
-  Plus,
-  Phone,
-  Calendar,
-  User,
-  Wrench,
-  RefreshCw,
-  Loader2,
-  Car,
-} from "lucide-react";
-import CardBox from "@/app/components/shared/CardBox";
+import React, { useState, useEffect, useMemo } from "react";
 import BreadcrumbComp from "../../layout/shared/breadcrumb/BreadcrumbComp";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { TableLoading } from "@/components/ui/loader";
+import VehiclesKPI from "./list/VehiclesKPI";
+import VehiclesFilter from "./list/VehiclesFilter";
+import VehiclesTable from "./list/VehiclesTable";
+import VehicleFormDialog from "./form/VehicleFormDialog";
+import VehicleDetailDialog from "./form/VehicleDetailDialog";
+import VehicleDeleteDialog from "./form/VehicleDeleteDialog";
+import { VehicleItem } from "@/types/master";
 
 const BCrumb = [
-  {
-    to: "/admin",
-    title: "Dashboard",
-  },
-  {
-    title: "Kendaraan Motor",
-  },
+  { to: "/admin", title: "Dashboard" },
+  { title: "Kendaraan Motor" },
 ];
 
-interface VehicleItem {
-  id: string;
-  customer_id?: string;
-  plate_number: string;
-  brand: string;
-  model: string;
-  production_year?: number;
-  customer_name?: string;
-  customer_phone?: string;
-}
-
 export default function VehiclesPage() {
-  const [searchTerm, setSearchTerm] = useState("");
   const [vehicles, setVehicles] = useState<VehicleItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [brandFilter, setBrandFilter] = useState("all");
 
-  const loadVehicles = async () => {
+  // Modals state
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingVehicle, setEditingVehicle] = useState<VehicleItem | null>(null);
+
+  const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [detailVehicleId, setDetailVehicleId] = useState<string | null>(null);
+
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [vehicleToDelete, setVehicleToDelete] = useState<VehicleItem | null>(null);
+
+  // Fetch vehicles
+  const fetchVehicles = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/work-orders/masters", { cache: "no-store" });
+      const res = await fetch("/api/vehicles", { cache: "no-store" });
+      const json = await res.json();
       if (res.ok) {
-        const json = await res.json();
-        const rawVehicles = json.vehicles || [];
-        const customers = json.customers || [];
-        const customerMap = new Map(customers.map((c: any) => [c.id, c]));
-
-        const mapped: VehicleItem[] = rawVehicles.map((v: any) => {
-          const cust: any = customerMap.get(v.customer_id);
-          return {
-            id: v.id,
-            customer_id: v.customer_id,
-            plate_number: v.plate_number || "-",
-            brand: v.brand || "Motor",
-            model: v.model || "-",
-            production_year: v.production_year,
-            customer_name: cust?.name || "Pelanggan Terdaftar",
-            customer_phone: cust?.phone || "-",
-          };
-        });
-        setVehicles(mapped);
+        setVehicles(json.data || []);
       }
     } catch (err) {
-      console.warn("Gagal memuat data kendaraan:", err);
+      console.error("Error fetching vehicles:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
   useEffect(() => {
-    loadVehicles();
+    fetchVehicles();
   }, []);
 
-  const filtered = vehicles.filter(
-    (v) =>
-      v.plate_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      v.model.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (v.customer_name && v.customer_name.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Filtered vehicles
+  const filteredVehicles = useMemo(() => {
+    return vehicles.filter((v) => {
+      const term = searchTerm.toLowerCase().trim();
+      const termNorm = term.replace(/\s+/g, "");
+
+      const matchSearch =
+        !term ||
+        (v.plate_number || "").toLowerCase().includes(term) ||
+        (v.plate_number_normalized || "").toLowerCase().includes(termNorm) ||
+        (v.model || "").toLowerCase().includes(term) ||
+        (v.brand || "").toLowerCase().includes(term) ||
+        (v.customer?.name || "").toLowerCase().includes(term) ||
+        (v.customer?.phone || "").includes(term);
+
+      const matchBrand =
+        brandFilter === "all" ||
+        (v.brand || "").toLowerCase() === brandFilter.toLowerCase();
+
+      return matchSearch && matchBrand;
+    });
+  }, [vehicles, searchTerm, brandFilter]);
+
+  // KPI Calculations
+  const totalVehicles = vehicles.length;
+
+  const topBrand = useMemo(() => {
+    if (vehicles.length === 0) return "Belum Ada";
+    const brandCounts: Record<string, number> = {};
+    vehicles.forEach((v) => {
+      const b = v.brand || "Lainnya";
+      brandCounts[b] = (brandCounts[b] || 0) + 1;
+    });
+    const sorted = Object.entries(brandCounts).sort((a, b) => b[1] - a[1]);
+    return sorted[0] ? `${sorted[0][0]} (${sorted[0][1]} unit)` : "Honda";
+  }, [vehicles]);
+
+  const totalServices = useMemo(() => {
+    return vehicles.reduce((sum, v) => sum + (v.total_services || 0), 0);
+  }, [vehicles]);
+
+  const activeCount = useMemo(() => {
+    return vehicles.filter((v) => (v.total_services || 0) > 0).length;
+  }, [vehicles]);
+
+  // Action handlers
+  const handleOpenCreate = () => {
+    setEditingVehicle(null);
+    setIsFormOpen(true);
+  };
+
+  const handleOpenEdit = (vehicle: VehicleItem) => {
+    setEditingVehicle(vehicle);
+    setIsFormOpen(true);
+  };
+
+  const handleOpenDetail = (vehicle: VehicleItem) => {
+    setDetailVehicleId(vehicle.id);
+    setIsDetailOpen(true);
+  };
+
+  const handleOpenDelete = (vehicle: VehicleItem) => {
+    setVehicleToDelete(vehicle);
+    setIsDeleteOpen(true);
+  };
 
   return (
     <>
       <BreadcrumbComp title="Data Kendaraan Motor" items={BCrumb} />
 
       <div className="space-y-6">
-        {/* STATS SUMMARY */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-          <CardBox className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">
-                  Total Motor Terdaftar
-                </p>
-                <h3 className="text-2xl font-bold text-foreground">
-                  {vehicles.length} Motor
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Database master bengkel
-                </p>
-              </div>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-lightprimary text-primary">
-                <Bike className="h-6 w-6" />
-              </div>
-            </div>
-          </CardBox>
+        {/* KPI CARDS */}
+        <VehiclesKPI
+          totalVehicles={totalVehicles}
+          topBrand={topBrand}
+          totalServices={totalServices}
+          activeCount={activeCount}
+        />
 
-          <CardBox className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">
-                  Merek Terbanyak
-                </p>
-                <h3 className="text-2xl font-bold text-foreground">
-                  Honda & Yamaha
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Matic & Bebek 110-160cc
-                </p>
-              </div>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-lightsuccess text-success">
-                <Wrench className="h-6 w-6" />
-              </div>
-            </div>
-          </CardBox>
+        {/* SEARCH & FILTERS */}
+        <VehiclesFilter
+          searchTerm={searchTerm}
+          onSearchChange={setSearchTerm}
+          brandFilter={brandFilter}
+          onBrandFilterChange={setBrandFilter}
+          onRefresh={fetchVehicles}
+          isLoading={isLoading}
+          onOpenCreate={handleOpenCreate}
+        />
 
-          <CardBox className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-1">
-                  Riwayat Servis
-                </p>
-                <h3 className="text-2xl font-bold text-foreground">
-                  Tersinkronisasi
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Terhubung ke Perintah Kerja
-                </p>
-              </div>
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-lightwarning text-warning">
-                <Calendar className="h-6 w-6" />
-              </div>
-            </div>
-          </CardBox>
-        </div>
-
-        {/* CONTROLS */}
-        <CardBox className="p-5">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="relative w-full sm:max-w-md">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Cari plat nomor, model motor, atau pemilik..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9 h-10 text-sm"
-              />
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={loadVehicles}
-                disabled={isLoading}
-                title="Segarkan data kendaraan"
-                className="h-10 px-3 gap-1.5 text-xs font-semibold"
-              >
-                <RefreshCw className={`h-4 w-4 ${isLoading ? "animate-spin text-primary" : "text-muted-foreground"}`} />
-                <span className="hidden sm:inline">Segarkan</span>
-              </Button>
-
-              <Link href="/admin/work-orders">
-                <Button className="gap-2 bg-primary hover:bg-primaryemphasis text-white h-10">
-                  <Plus className="h-4 w-4" />
-                  <span>+ Buat Perintah Kerja</span>
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </CardBox>
-
-        {/* VEHICLES TABLE */}
-        <CardBox className="p-6">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-muted/50 text-xs font-semibold uppercase text-muted-foreground border-b border-border">
-                <tr>
-                  <th className="py-3 px-4">Plat Nomor</th>
-                  <th className="py-3 px-4">Model Kendaraan</th>
-                  <th className="py-3 px-4">Merek & Tahun</th>
-                  <th className="py-3 px-4">Pemilik (Pelanggan)</th>
-                  <th className="py-3 px-4">Kontak WhatsApp</th>
-                  <th className="py-3 px-4 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {isLoading ? (
-                  <TableLoading
-                    colSpan={6}
-                    title="Memuat data kendaraan..."
-                    subtitle="Menghubungkan ke database master motor Bengkel_Mustop"
-                    size="md"
-                  />
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="py-12 text-center text-muted-foreground">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <Bike className="h-8 w-8 text-muted-foreground/60" />
-                        <p className="font-semibold text-foreground text-sm">
-                          {vehicles.length === 0 ? "Belum ada data motor terdaftar" : "Tidak ada motor yang cocok"}
-                        </p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filtered.map((v) => (
-                    <tr key={v.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-4 px-4 font-mono font-bold text-foreground">
-                        <span className="bg-muted px-2 py-1 rounded">
-                          {v.plate_number}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4 font-medium text-foreground">
-                        {v.model}
-                      </td>
-                      <td className="py-4 px-4 text-muted-foreground text-xs">
-                        {v.brand} {v.production_year ? `• ${v.production_year}` : ""}
-                      </td>
-                      <td className="py-4 px-4">
-                        <span className="font-semibold text-foreground text-sm">
-                          {v.customer_name}
-                        </span>
-                      </td>
-                      <td className="py-4 px-4">
-                        {v.customer_phone && v.customer_phone !== "-" ? (
-                          <a
-                            href={`https://wa.me/${v.customer_phone}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-xs text-emerald-600 hover:text-emerald-700 font-medium"
-                          >
-                            <Phone className="h-3.5 w-3.5" />
-                            <span>{v.customer_phone}</span>
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground text-xs">-</span>
-                        )}
-                      </td>
-                      <td className="py-4 px-4 text-center">
-                        <Link href="/admin/work-orders">
-                          <Button size="sm" variant="outline" className="h-8 text-xs font-semibold gap-1">
-                            <Wrench className="h-3.5 w-3.5" />
-                            <span>Servis</span>
-                          </Button>
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </CardBox>
+        {/* DATA TABLE */}
+        <VehiclesTable
+          vehicles={filteredVehicles}
+          allCount={totalVehicles}
+          isLoading={isLoading}
+          onViewDetail={handleOpenDetail}
+          onEdit={handleOpenEdit}
+          onDelete={handleOpenDelete}
+        />
       </div>
+
+      {/* CREATE & EDIT MODAL */}
+      <VehicleFormDialog
+        open={isFormOpen}
+        onOpenChange={setIsFormOpen}
+        editingVehicle={editingVehicle}
+        onSaveSuccess={fetchVehicles}
+      />
+
+      {/* DETAIL & HISTORY MODAL */}
+      <VehicleDetailDialog
+        open={isDetailOpen}
+        onOpenChange={setIsDetailOpen}
+        vehicleId={detailVehicleId}
+        onEditRequest={(v) => {
+          setIsDetailOpen(false);
+          handleOpenEdit(v);
+        }}
+      />
+
+      {/* DELETE MODAL */}
+      <VehicleDeleteDialog
+        open={isDeleteOpen}
+        onOpenChange={setIsDeleteOpen}
+        vehicle={vehicleToDelete}
+        onDeleteSuccess={fetchVehicles}
+      />
     </>
   );
 }

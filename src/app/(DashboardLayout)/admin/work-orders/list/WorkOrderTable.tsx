@@ -53,7 +53,7 @@ export default function WorkOrderTable({
             {isLoading ? (
               <TableLoading
                 colSpan={7}
-                title="Menghubungkan ke Database Supabase..."
+                title="Memeriksa data..."
                 subtitle="Memuat data Perintah Kerja terkini"
                 size="md"
               />
@@ -67,7 +67,7 @@ export default function WorkOrderTable({
                     <Wrench className="h-8 w-8 text-muted-foreground/60" />
                     <p className="font-semibold text-foreground">
                       {allOrdersCount === 0
-                        ? "Belum ada Perintah Kerja di Database"
+                        ? "Belum ada data perintah kerja"
                         : "Tidak ada data yang cocok dengan filter"}
                     </p>
                     <p className="text-xs text-muted-foreground text-center">

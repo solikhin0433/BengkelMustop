@@ -1,19 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import {
-  X,
-  Plus,
-  Trash2,
-  Wrench,
-  User,
-  Car,
-  Calculator,
-  AlertCircle,
-  Save,
-  Loader2,
-  CheckCircle2,
-} from "lucide-react";
+import { Trash2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -40,6 +28,8 @@ import {
 } from "../types";
 import { WorkOrderStore } from "../work-order-store";
 import { mechanicsList } from "../mock-data";
+import { toast } from "@/lib/toast";
+import { actionMessages } from "@/lib/action-messages";
 
 interface WorkOrderFormDialogProps {
   open: boolean;
@@ -105,8 +95,7 @@ export default function WorkOrderFormDialog({
     const model = v.model?.trim() || "Motor";
     const modelHasBrand = model.toLowerCase().startsWith(brand.toLowerCase());
     const name = modelHasBrand ? model : `${brand} ${model}`.trim();
-    const year = v.production_year ? ` (${v.production_year})` : "";
-    return `${v.plate_number} • ${name}${year}`;
+    return `${v.plate_number} • ${name}`;
   };
 
   // Load masters from Database on open
@@ -304,7 +293,7 @@ export default function WorkOrderFormDialog({
         });
 
         if (!res.success) {
-          setErrorMessage(res.error || "Gagal memperbarui data di database");
+          setErrorMessage(res.error || "Gagal memperbarui data");
           setIsSaving(false);
           return;
         }
@@ -341,6 +330,11 @@ export default function WorkOrderFormDialog({
       }
 
       setIsSaving(false);
+      toast.success(
+        isEdit && orderToEdit
+          ? actionMessages.workOrder.updated(orderToEdit.work_order_number)
+          : "Perintah kerja baru berhasil diterbitkan."
+      );
       onSaveSuccess();
       onOpenChange(false);
     } catch (err: any) {
@@ -375,9 +369,8 @@ export default function WorkOrderFormDialog({
           className="flex-1 overflow-y-auto overflow-x-hidden p-4 sm:p-6 space-y-5 [scrollbar-width:thin] [scrollbar-color:hsl(var(--muted-foreground)/0.25)_transparent] [&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-muted-foreground/20 hover:[&::-webkit-scrollbar-thumb]:bg-muted-foreground/35"
         >
           {errorMessage && (
-            <div className="rounded-lg bg-destructive/10 border border-destructive/20 p-3.5 flex items-center gap-2.5 text-destructive text-xs sm:text-sm font-medium">
-              <AlertCircle className="h-4 w-4 shrink-0" />
-              <span>{errorMessage}</span>
+            <div className="rounded-lg bg-red-50 border border-red-200 p-3.5 text-red-600 text-xs sm:text-sm font-medium">
+              {errorMessage}
             </div>
           )}
 
@@ -387,9 +380,8 @@ export default function WorkOrderFormDialog({
             <div className="space-y-3 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label className="text-xs sm:text-sm font-bold flex items-center gap-1.5 text-foreground">
-                    <User className="h-4 w-4 text-primary" />
-                    <span>Data Pelanggan</span>
+                  <Label className="text-xs sm:text-sm font-bold text-foreground">
+                    Data Pelanggan
                   </Label>
                   <button
                     type="button"
@@ -464,9 +456,8 @@ export default function WorkOrderFormDialog({
             <div className="space-y-3 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between mb-2">
-                  <Label className="text-xs sm:text-sm font-bold flex items-center gap-1.5 text-foreground">
-                    <Car className="h-4 w-4 text-primary" />
-                    <span>Kendaraan Motor</span>
+                  <Label className="text-xs sm:text-sm font-bold text-foreground">
+                    Kendaraan Motor
                   </Label>
                   {!isNewCustomer && customerVehicles.length > 0 && (
                     <button
@@ -509,27 +500,15 @@ export default function WorkOrderFormDialog({
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                      <div>
-                        <Label className="text-xs font-medium">Model / Tipe *</Label>
-                        <Input
-                          placeholder="Vario 160 / NMAX"
-                          value={newModel}
-                          onChange={(e) => setNewModel(e.target.value)}
-                          className="h-9 text-xs sm:text-sm mt-1"
-                          required
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-xs font-medium">Tahun</Label>
-                        <Input
-                          type="number"
-                          placeholder="2023"
-                          value={newYear}
-                          onChange={(e) => setNewYear(Number(e.target.value))}
-                          className="h-9 text-xs sm:text-sm mt-1"
-                        />
-                      </div>
+                    <div>
+                      <Label className="text-xs font-medium">Model / Tipe *</Label>
+                      <Input
+                        placeholder="Vario 160 / NMAX"
+                        value={newModel}
+                        onChange={(e) => setNewModel(e.target.value)}
+                        className="h-9 text-xs sm:text-sm mt-1"
+                        required
+                      />
                     </div>
                   </div>
                 ) : (
@@ -548,8 +527,7 @@ export default function WorkOrderFormDialog({
 
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/30 px-3 py-2 rounded-lg border border-border/50">
                       <span className="font-semibold text-foreground">Status:</span>
-                      <span className="text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
-                        <CheckCircle2 className="h-3.5 w-3.5" />
+                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                         Motor Terdaftar
                       </span>
                     </div>
@@ -611,9 +589,8 @@ export default function WorkOrderFormDialog({
           <div className="bg-card rounded-xl border border-border p-5 space-y-4 shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div>
-                <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
-                  <Wrench className="h-4 w-4 text-primary" />
-                  <span>Rincian Jasa & Suku Cadang</span>
+                <h3 className="text-xs sm:text-sm font-bold text-foreground">
+                  Rincian Jasa & Suku Cadang
                 </h3>
                 <p className="text-xs text-muted-foreground mt-0.5">
                   Daftar jasa servis dan suku cadang yang dikerjakan.
@@ -778,9 +755,8 @@ export default function WorkOrderFormDialog({
 
           {/* CARD 4: PEMBAYARAN KASIR (Seimbang 3 Kolom) */}
           <div className="bg-card rounded-xl border border-border p-5 space-y-4 shadow-xs">
-            <h3 className="text-xs sm:text-sm font-bold text-foreground flex items-center gap-1.5">
-              <Calculator className="h-4 w-4 text-primary" />
-              <span>Pencatatan Pembayaran Awal</span>
+            <h3 className="text-xs sm:text-sm font-bold text-foreground">
+              Pencatatan Pembayaran Awal
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -843,26 +819,15 @@ export default function WorkOrderFormDialog({
             onClick={() => onOpenChange(false)}
             className="gap-1.5 h-10 px-5 text-xs sm:text-sm font-semibold rounded-lg"
           >
-            <X className="h-4 w-4" />
-            <span>Batal</span>
+            Batal
           </Button>
           <Button
             type="submit"
             form="work-order-form"
             disabled={isSaving}
-            className="gap-2 bg-primary hover:bg-primaryemphasis text-white font-semibold shadow-md px-6 h-10 text-xs sm:text-sm rounded-lg"
+            className="bg-primary hover:bg-primaryemphasis text-white font-semibold shadow-md px-6 h-10 text-xs sm:text-sm rounded-lg"
           >
-            {isSaving ? (
-              <>
-                <CustomLoader size="sm" />
-                <span>Menyimpan...</span>
-              </>
-            ) : (
-              <>
-                <Save className="h-4 w-4" />
-                <span>{isEdit ? "Simpan Perubahan" : "Terbitkan Perintah Kerja"}</span>
-              </>
-            )}
+            {isSaving ? "Menyimpan..." : (isEdit ? "Simpan Perubahan" : "Terbitkan Perintah Kerja")}
           </Button>
         </DialogFooter>
       </DialogContent>

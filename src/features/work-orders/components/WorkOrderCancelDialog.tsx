@@ -12,9 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Ban, Loader2 } from "lucide-react";
+import { CustomLoader } from "@/components/ui/loader";
 import { WorkOrder } from "../types";
 import { WorkOrderStore } from "../work-order-store";
+import { toast } from "@/lib/toast";
+import { actionMessages } from "@/lib/action-messages";
 
 interface WorkOrderCancelDialogProps {
   order: WorkOrder | null;
@@ -47,14 +49,19 @@ export default function WorkOrderCancelDialog({
     try {
       const res = await WorkOrderStore.cancelOrder(order.id, reason.trim());
       if (res.success) {
+        toast.success(actionMessages.workOrder.cancelled(order.work_order_number));
         onCancelled(order);
         onOpenChange(false);
         setReason("");
       } else {
-        setError(res.error || "Gagal membatalkan perintah kerja");
+        const msg = res.error || "Gagal membatalkan perintah kerja";
+        toast.error(msg);
+        setError(msg);
       }
     } catch (e: any) {
-      setError(e.message || "Gagal membatalkan perintah kerja");
+      const msg = e.message || "Gagal membatalkan perintah kerja";
+      toast.error(msg);
+      setError(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -70,12 +77,15 @@ export default function WorkOrderCancelDialog({
       try {
         const ok = await WorkOrderStore.deleteOrder(order.id);
         if (ok) {
+          toast.success(actionMessages.success.delete(`Perintah Kerja ${order.work_order_number}`));
           if (onDeleted) onDeleted(order.id);
           onOpenChange(false);
         } else {
-          setError("Gagal menghapus data dari database.");
+          toast.error("Gagal menghapus data.");
+          setError("Gagal menghapus data.");
         }
       } catch (e: any) {
+        toast.error(e.message || "Gagal menghapus");
         setError(e.message || "Gagal menghapus");
       } finally {
         setIsSubmitting(false);
@@ -87,31 +97,21 @@ export default function WorkOrderCancelDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md p-6">
         <DialogHeader className="pb-2">
-          <div className="flex items-center gap-2 text-destructive">
-            <div className="h-9 w-9 rounded-full bg-destructive/10 flex items-center justify-center shrink-0">
-              <Ban className="h-5 w-5" />
-            </div>
-            <div>
-              <DialogTitle className="text-lg font-bold text-foreground">
-                Batalkan Perintah Kerja
-              </DialogTitle>
-              <DialogDescription className="text-xs text-muted-foreground mt-0.5">
-                Nomor: <span className="font-mono font-bold text-foreground">{order.work_order_number}</span> ({order.customer_name})
-              </DialogDescription>
-            </div>
-          </div>
+          <DialogTitle className="text-base font-semibold text-foreground">
+            Batalkan Perintah Kerja
+          </DialogTitle>
+          <DialogDescription className="text-sm text-muted-foreground mt-0.5">
+            Nomor: <span className="font-mono font-bold text-foreground">{order.work_order_number}</span> ({order.customer_name})
+          </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4 pt-2">
-          <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-3 text-xs text-destructive flex items-start gap-2">
-            <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-            <span>
-              Sesuai aturan Bengkel_Mustop, pembatalan servis akan mencatat riwayat pembatalan serta alasan pembatalan untuk jejak audit operasional bengkel.
-            </span>
+          <div className="p-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-md">
+            Sesuai aturan operasional, pembatalan servis akan mencatat riwayat dan alasan pembatalan untuk jejak audit bengkel.
           </div>
 
           <div>
-            <Label className="text-xs font-bold text-foreground">
+            <Label className="text-xs font-semibold text-foreground">
               Alasan Pembatalan *
             </Label>
             <Textarea
@@ -125,7 +125,7 @@ export default function WorkOrderCancelDialog({
               className="mt-1 text-sm resize-none"
               required
             />
-            {error && <p className="text-xs text-destructive font-medium mt-1">{error}</p>}
+            {error && <p className="text-xs text-red-600 font-medium mt-1">{error}</p>}
           </div>
 
           {order.status === "waiting" && (
@@ -151,6 +151,7 @@ export default function WorkOrderCancelDialog({
             size="sm"
             disabled={isSubmitting}
             onClick={() => onOpenChange(false)}
+            className="h-9 text-sm"
           >
             Kembali
           </Button>
@@ -160,18 +161,15 @@ export default function WorkOrderCancelDialog({
             size="sm"
             disabled={isSubmitting}
             onClick={handleConfirmCancel}
-            className="gap-1.5 font-semibold"
+            className="h-9 text-sm font-semibold"
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Memproses...</span>
+                <CustomLoader size="sm" />
+                <span className="ml-1.5">Memproses...</span>
               </>
             ) : (
-              <>
-                <Ban className="h-4 w-4" />
-                <span>Konfirmasi Batalkan</span>
-              </>
+              "Konfirmasi Batalkan"
             )}
           </Button>
         </DialogFooter>

@@ -26,7 +26,7 @@ export default function WorkOrdersPage() {
   const [filterStatus, setFilterStatus] = useState<string>("semua");
   const [filterPayment, setFilterPayment] = useState<string>("semua");
   const [lowStockCount, setLowStockCount] = useState<number>(0);
-  const [lowStockSubtitle, setLowStockSubtitle] = useState<string>("Memeriksa database...");
+  const [lowStockSubtitle, setLowStockSubtitle] = useState<string>("Memeriksa data...");
 
   // Modal / Dialog States
   const [formDialogOpen, setFormDialogOpen] = useState(false);

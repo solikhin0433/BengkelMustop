@@ -34,7 +34,7 @@ export function CustomLoader({
  * Helper tampilan loading halaman atau container penuh
  */
 export function PageLoading({
-  title = "Memuat data...",
+  title = "Memeriksa data...",
   subtitle,
   size = "lg",
   className,
@@ -69,7 +69,7 @@ export function PageLoading({
  */
 export function TableLoading({
   colSpan = 6,
-  title = "Memuat data...",
+  title = "Memeriksa data...",
   subtitle,
   size = "md",
 }: {

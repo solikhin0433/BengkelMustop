@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { FolderPlus } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -14,6 +14,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CustomLoader } from "@/components/ui/loader";
 import { SparepartCategory } from "@/types/master";
+import { toast } from "@/lib/toast";
+import { actionMessages } from "@/lib/action-messages";
 
 interface PartCategoryDialogProps {
   open: boolean;
@@ -43,13 +45,14 @@ export default function PartCategoryDialog({
       const json = await res.json();
       if (res.ok && json.data) {
         onCategoryCreated(json.data);
+        toast.success(actionMessages.part.categoryCreated(newCategoryName.trim()));
         onOpenChange(false);
         setNewCategoryName("");
       } else {
-        alert(json.error || "Gagal membuat kategori baru");
+        toast.error(json.error || "Gagal membuat kategori baru");
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      toast.error(err.message || "Gagal membuat kategori baru");
     } finally {
       setIsSavingCategory(false);
     }
@@ -59,10 +62,7 @@ export default function PartCategoryDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-xs">
         <DialogHeader>
-          <DialogTitle className="text-sm font-bold flex items-center gap-2">
-            <FolderPlus className="w-4 h-4 text-primary" />
-            <span>Tambah Kategori Sparepart</span>
-          </DialogTitle>
+          <DialogTitle className="text-sm font-semibold">Tambah Kategori Sparepart</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSaveCategory} className="space-y-3 pt-2">
           <div className="space-y-1">

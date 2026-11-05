@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { AlertTriangle, Trash2 } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -13,6 +13,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { CustomLoader } from "@/components/ui/loader";
 import { ServiceItem } from "@/types/master";
+import { toast } from "@/lib/toast";
+import { actionMessages } from "@/lib/action-messages";
 
 interface ServiceDeleteDialogProps {
   open: boolean;
@@ -38,13 +40,14 @@ export default function ServiceDeleteDialog({
       });
       if (res.ok) {
         onOpenChange(false);
+        toast.success(actionMessages.service.deleted);
         onDeleteSuccess();
       } else {
         const json = await res.json();
-        alert(json.error || "Gagal menghapus jasa");
+        toast.error(json.error || actionMessages.error.delete("Jasa"));
       }
-    } catch (err) {
-      console.error("Error deleting service:", err);
+    } catch (err: any) {
+      toast.error(err.message || actionMessages.error.delete("Jasa"));
     } finally {
       setIsDeleting(false);
     }
@@ -54,10 +57,7 @@ export default function ServiceDeleteDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-error text-base">
-            <AlertTriangle className="h-5 w-5" />
-            <span>Hapus Jasa Servis?</span>
-          </DialogTitle>
+          <DialogTitle className="text-base font-semibold">Hapus Jasa Servis?</DialogTitle>
           <DialogDescription className="text-xs pt-1">
             Apakah Anda yakin ingin menghapus layanan{" "}
             <strong className="text-foreground">{service?.name}</strong>? Data
@@ -87,10 +87,7 @@ export default function ServiceDeleteDialog({
                 <span>Menghapus...</span>
               </>
             ) : (
-              <>
-                <Trash2 className="h-3.5 w-3.5" />
-                <span>Ya, Hapus Jasa</span>
-              </>
+              <span>Ya, Hapus</span>
             )}
           </Button>
         </DialogFooter>

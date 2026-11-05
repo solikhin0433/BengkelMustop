@@ -43,9 +43,6 @@ export interface CustomerVehicle {
   plate_number: string;
   brand: string;
   model: string;
-  production_year?: number | null;
-  engine_capacity?: string | null;
-  notes?: string | null;
   created_at?: string;
 }
 
@@ -57,6 +54,36 @@ export interface CustomerWorkOrderSummary {
   amount_paid: number;
   payment_status: string;
   status: string;
+}
+
+export interface VehicleItem {
+  id: string;
+  customer_id: string;
+  plate_number: string;
+  plate_number_normalized?: string;
+  brand: string;
+  model: string;
+  created_at: string;
+  updated_at?: string;
+  customer?: {
+    id: string;
+    name: string;
+    phone: string | null;
+    phone_normalized?: string | null;
+    address?: string | null;
+  } | null;
+  total_services?: number;
+  last_service?: string | null;
+  work_orders?: Array<{
+    id: string;
+    work_order_number: string;
+    received_at: string;
+    status: string;
+    grand_total: number;
+    amount_paid?: number;
+    payment_status: string;
+    customer_complaint?: string;
+  }>;
 }
 
 export interface CustomerItem {

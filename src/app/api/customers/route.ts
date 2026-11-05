@@ -33,9 +33,6 @@ export async function GET(request: NextRequest) {
           plate_number_normalized,
           brand,
           model,
-          production_year,
-          engine_capacity,
-          notes,
           archived_at
         ),
         work_orders:tr_perintah_kerja (
@@ -43,7 +40,6 @@ export async function GET(request: NextRequest) {
           work_order_number,
           received_at,
           grand_total,
-          amount_paid,
           payment_status,
           status
         )
@@ -85,7 +81,7 @@ export async function GET(request: NextRequest) {
       // Total unpaid / bon aktif
       const totalUnpaid = validOrders.reduce((sum: number, o: any) => {
         if (o.payment_status === "unpaid" || o.payment_status === "partial") {
-          return sum + Math.max(0, (o.grand_total || 0) - (o.amount_paid || 0));
+          return sum + Number(o.grand_total || 0);
         }
         return sum;
       }, 0);
@@ -103,6 +99,15 @@ export async function GET(request: NextRequest) {
         total_visits: totalVisits,
         last_visit: lastVisit,
         total_unpaid: totalUnpaid,
+        work_orders: validOrders.map((wo: any) => ({
+          id: wo.id,
+          work_order_number: wo.work_order_number,
+          received_at: wo.received_at,
+          grand_total: Number(wo.grand_total || 0),
+          amount_paid: wo.payment_status === "paid" ? Number(wo.grand_total || 0) : 0,
+          payment_status: wo.payment_status,
+          status: wo.status,
+        })),
       };
     });
 
@@ -159,8 +164,6 @@ export async function POST(request: NextRequest) {
       plate_number,
       brand,
       model,
-      production_year,
-      engine_capacity,
     } = body;
 
     if (!name || !name.trim()) {
@@ -208,8 +211,6 @@ export async function POST(request: NextRequest) {
           plate_number_normalized: normPlate,
           brand: brand?.trim() || "Lainnya",
           model: model?.trim() || "Motor",
-          production_year: Number(production_year) || null,
-          engine_capacity: engine_capacity?.trim() || null,
         })
         .select()
         .single();

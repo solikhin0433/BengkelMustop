@@ -44,8 +44,8 @@ export default function ServicesTable({
             {isLoading ? (
               <TableLoading
                 colSpan={8}
-                title="Memuat Master Jasa Servis..."
-                subtitle="Menghubungkan ke database Bengkel_Mustop"
+                title="Memeriksa data..."
+                subtitle="Memuat data jasa & tarif servis"
                 size="md"
               />
             ) : services.length === 0 ? (

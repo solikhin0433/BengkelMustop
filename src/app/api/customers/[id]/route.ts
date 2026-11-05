@@ -27,9 +27,6 @@ export async function GET(
           plate_number,
           brand,
           model,
-          production_year,
-          engine_capacity,
-          notes,
           archived_at
         ),
         work_orders:tr_perintah_kerja (
@@ -37,11 +34,9 @@ export async function GET(
           work_order_number,
           received_at,
           grand_total,
-          amount_paid,
           payment_status,
           status,
-          customer_complaint,
-          mechanic
+          customer_complaint
         )
       `)
       .eq("id", id)

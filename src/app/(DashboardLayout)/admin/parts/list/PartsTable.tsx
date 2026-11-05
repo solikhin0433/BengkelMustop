@@ -58,8 +58,8 @@ export default function PartsTable({
             {isLoading ? (
               <TableLoading
                 colSpan={9}
-                title="Memuat Master Sparepart..."
-                subtitle="Menghubungkan ke database stok Bengkel_Mustop"
+                title="Memeriksa data..."
+                subtitle="Memuat data sparepart & stok"
                 size="md"
               />
             ) : parts.length === 0 ? (

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { ArrowUpDown, AlertTriangle, Save } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CustomLoader } from "@/components/ui/loader";
 import { SparepartItem } from "@/types/master";
+import { toast } from "@/lib/toast";
+import { actionMessages } from "@/lib/action-messages";
 
 interface PartStockAdjustDialogProps {
   open: boolean;
@@ -75,6 +77,7 @@ export default function PartStockAdjustDialog({
       }
 
       onOpenChange(false);
+      toast.success(actionMessages.part.stockAdjusted(part.name, qty, part.unit));
       onAdjustSuccess();
     } catch (err: any) {
       setAdjustError(err.message || "Terjadi kesalahan sistem");
@@ -87,12 +90,7 @@ export default function PartStockAdjustDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <div className="p-2 rounded-lg bg-warning/10 text-warning">
-              <ArrowUpDown className="w-5 h-5" />
-            </div>
-            <span>Penyesuaian Stok Sparepart</span>
-          </DialogTitle>
+          <DialogTitle className="text-base font-semibold">Penyesuaian Stok Sparepart</DialogTitle>
           <DialogDescription className="text-xs">
             Ubah stok fisik untuk:{" "}
             <strong className="text-foreground">{part?.name}</strong>{" "}
@@ -106,10 +104,7 @@ export default function PartStockAdjustDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {adjustError && (
-            <div className="p-3 text-xs bg-lighterror text-error rounded-md flex items-center gap-2 border border-error/20">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>{adjustError}</span>
-            </div>
+          <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">{adjustError}</div>
           )}
 
           <div className="space-y-1.5">
@@ -208,10 +203,7 @@ export default function PartStockAdjustDialog({
                   <span>Menyesuaikan...</span>
                 </>
               ) : (
-                <>
-                  <Save className="h-3.5 w-3.5" />
-                  <span>Konfirmasi Perubahan Stok</span>
-                </>
+                <span>Konfirmasi Perubahan Stok</span>
               )}
             </Button>
           </DialogFooter>

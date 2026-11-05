@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Users, Save, X, AlertTriangle, Bike } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CustomLoader } from "@/components/ui/loader";
 import { CustomerItem } from "@/types/master";
+import { toast } from "@/lib/toast";
+import { actionMessages } from "@/lib/action-messages";
 
 interface CustomerFormDialogProps {
   open: boolean;
@@ -39,7 +41,6 @@ export default function CustomerFormDialog({
   const [plateNumber, setPlateNumber] = useState("");
   const [brand, setBrand] = useState("Honda");
   const [model, setModel] = useState("");
-  const [productionYear, setProductionYear] = useState<number | string>("");
 
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -60,7 +61,6 @@ export default function CustomerFormDialog({
       setPlateNumber("");
       setBrand("Honda");
       setModel("");
-      setProductionYear("");
     }
     setFormError("");
   }, [editingCustomer, open]);
@@ -95,7 +95,6 @@ export default function CustomerFormDialog({
         payload.plate_number = plateNumber.trim().toUpperCase();
         payload.brand = brand.trim() || "Lainnya";
         payload.model = model.trim() || "Motor";
-        payload.production_year = Number(productionYear) || null;
       }
 
       let res: Response;
@@ -120,6 +119,7 @@ export default function CustomerFormDialog({
       }
 
       onOpenChange(false);
+      toast.success(editingCustomer ? actionMessages.customer.updated : actionMessages.customer.created);
       onSaveSuccess();
     } catch (err: any) {
       setFormError(err.message || "Terjadi kesalahan sistem saat menyimpan");
@@ -132,15 +132,10 @@ export default function CustomerFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <Users className="w-5 h-5" />
-            </div>
-            <span>
-              {editingCustomer ? "Edit Data Pelanggan" : "Tambah Pelanggan Baru"}
-            </span>
+          <DialogTitle className="text-base font-semibold">
+            {editingCustomer ? "Edit Data Pelanggan" : "Tambah Pelanggan Baru"}
           </DialogTitle>
-          <DialogDescription className="text-xs">
+          <DialogDescription className="text-sm text-muted-foreground">
             {editingCustomer
               ? "Perbarui kontak, alamat, atau catatan pelanggan ini."
               : "Masukkan informasi data diri pelanggan ke master data Bengkel_Mustop."}
@@ -149,10 +144,7 @@ export default function CustomerFormDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {formError && (
-            <div className="p-3 text-xs bg-lighterror text-error rounded-md flex items-center gap-2 border border-error/20">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>{formError}</span>
-            </div>
+            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">{formError}</div>
           )}
 
           <div className="space-y-1.5">
@@ -222,10 +214,7 @@ export default function CustomerFormDialog({
                   onChange={(e) => setHasVehicle(e.target.checked)}
                   className="w-4 h-4 rounded text-primary focus:ring-primary border-border"
                 />
-                <span className="flex items-center gap-1.5">
-                  <Bike className="w-4 h-4 text-primary" />
-                  <span>Daftarkan motor pertama pelanggan sekarang juga</span>
-                </span>
+                <span>Daftarkan motor pertama pelanggan sekarang juga</span>
               </label>
 
               {hasVehicle && (
@@ -265,54 +254,37 @@ export default function CustomerFormDialog({
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    <div className="space-y-1">
-                      <Label htmlFor="init-model" className="text-[11px] font-semibold">
-                        Model / Tipe Motor
-                      </Label>
-                      <Input
-                        id="init-model"
-                        placeholder="Misal: Vario 160, Beat FI, NMAX"
-                        value={model}
-                        onChange={(e) => setModel(e.target.value)}
-                        className="h-9 text-xs"
-                      />
-                    </div>
-
-                    <div className="space-y-1">
-                      <Label htmlFor="init-year" className="text-[11px] font-semibold">
-                        Tahun Produksi
-                      </Label>
-                      <Input
-                        id="init-year"
-                        type="number"
-                        placeholder="Misal: 2022"
-                        value={productionYear}
-                        onChange={(e) => setProductionYear(e.target.value)}
-                        className="h-9 font-mono text-xs"
-                      />
-                    </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="init-model" className="text-[11px] font-semibold">
+                      Model / Tipe Motor
+                    </Label>
+                    <Input
+                      id="init-model"
+                      placeholder="Misal: Vario 160, Beat FI, NMAX"
+                      value={model}
+                      onChange={(e) => setModel(e.target.value)}
+                      className="h-9 text-xs"
+                    />
                   </div>
                 </div>
               )}
             </div>
           )}
 
-          <DialogFooter className="gap-2 pt-2">
+          <DialogFooter className="gap-2 pt-4">
             <Button
               type="button"
               variant="outline"
               disabled={isSaving}
               onClick={() => onOpenChange(false)}
-              className="h-9 text-xs"
+              className="h-9 text-sm"
             >
-              <X className="h-3.5 w-3.5 mr-1" />
               Batal
             </Button>
             <Button
               type="submit"
               disabled={isSaving}
-              className="h-9 bg-primary hover:bg-primaryemphasis text-white font-semibold text-xs gap-1.5"
+              className="h-9 bg-primary hover:bg-primaryemphasis text-white font-semibold text-sm"
             >
               {isSaving ? (
                 <>
@@ -320,10 +292,7 @@ export default function CustomerFormDialog({
                   <span>Menyimpan...</span>
                 </>
               ) : (
-                <>
-                  <Save className="h-3.5 w-3.5" />
-                  <span>{editingCustomer ? "Simpan Perubahan" : "Tambah Pelanggan"}</span>
-                </>
+                <span>{editingCustomer ? "Simpan Perubahan" : "Tambah Pelanggan"}</span>
               )}
             </Button>
           </DialogFooter>

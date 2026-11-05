@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Wrench, Save, X, AlertTriangle } from "lucide-react";
+
 import {
   Dialog,
   DialogContent,
@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CustomLoader } from "@/components/ui/loader";
 import { ServiceItem } from "@/types/master";
+import { toast } from "@/lib/toast";
+import { actionMessages } from "@/lib/action-messages";
 
 interface ServiceFormDialogProps {
   open: boolean;
@@ -111,6 +113,7 @@ export default function ServiceFormDialog({
       }
 
       onOpenChange(false);
+      toast.success(editingService ? actionMessages.service.updated : actionMessages.service.created);
       onSaveSuccess();
     } catch (err: any) {
       setFormError(err.message || "Terjadi kesalahan saat menyimpan");
@@ -123,15 +126,10 @@ export default function ServiceFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <div className="p-2 rounded-lg bg-primary/10 text-primary">
-              <Wrench className="w-5 h-5" />
-            </div>
-            <span>
-              {editingService ? "Edit Master Jasa Servis" : "Tambah Jasa Servis Baru"}
-            </span>
+          <DialogTitle className="text-base font-semibold">
+            {editingService ? "Edit Master Jasa Servis" : "Tambah Jasa Servis Baru"}
           </DialogTitle>
-          <DialogDescription className="text-xs">
+          <DialogDescription className="text-sm text-muted-foreground">
             {editingService
               ? "Perbarui tarif atau rincian layanan jasa servis ini."
               : "Tambahkan jenis jasa servis baru beserta tarif standarnya."}
@@ -140,10 +138,7 @@ export default function ServiceFormDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {formError && (
-            <div className="p-3 text-xs bg-lighterror text-error rounded-md flex items-center gap-2 border border-error/20">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>{formError}</span>
-            </div>
+          <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">{formError}</div>
           )}
 
           <div className="grid grid-cols-3 gap-3">
@@ -253,7 +248,6 @@ export default function ServiceFormDialog({
               onClick={() => onOpenChange(false)}
               className="h-9 text-xs"
             >
-              <X className="h-3.5 w-3.5 mr-1" />
               Batal
             </Button>
             <Button
@@ -267,10 +261,7 @@ export default function ServiceFormDialog({
                   <span>Menyimpan...</span>
                 </>
               ) : (
-                <>
-                  <Save className="h-3.5 w-3.5" />
-                  <span>{editingService ? "Simpan Perubahan" : "Tambah Jasa"}</span>
-                </>
+                <span>{editingService ? "Simpan Perubahan" : "Tambah Jasa"}</span>
               )}
             </Button>
           </DialogFooter>

@@ -13,27 +13,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Printer,
-  Phone,
-  Edit,
-  Trash2,
-  Clock,
-  CheckCircle2,
-  AlertTriangle,
-  Wrench,
-  DollarSign,
-  Calendar,
-  User,
-  Car,
-  FileText,
-  CreditCard,
-  Ban,
-  ArrowRight,
-} from "lucide-react";
+// No lucide icon imports needed for clean UI
 import { CustomLoader } from "@/components/ui/loader";
 import { WorkOrder, WorkOrderStatus, PaymentMethod } from "../types";
 import { WorkOrderStore } from "../work-order-store";
+import { toast } from "@/lib/toast";
+import { actionMessages } from "@/lib/action-messages";
 
 interface WorkOrderDetailDialogProps {
   order: WorkOrder | null;
@@ -84,12 +69,17 @@ export default function WorkOrderDetailDialog({
     try {
       const res = await WorkOrderStore.updateStatus(order.id, newStatus);
       if (res.success) {
+        toast.success(actionMessages.workOrder.statusUpdated(statusLabels[newStatus].label));
         onOrderUpdated();
       } else {
-        setActionError(res.error || "Gagal mengubah status pengerjaan");
+        const msg = res.error || "Gagal mengubah status pengerjaan";
+        toast.error(msg);
+        setActionError(msg);
       }
     } catch (e: any) {
-      setActionError(e.message || "Gagal mengubah status");
+      const msg = e.message || "Gagal mengubah status";
+      toast.error(msg);
+      setActionError(msg);
     } finally {
       setIsUpdatingStatus(false);
     }
@@ -103,14 +93,19 @@ export default function WorkOrderDetailDialog({
     try {
       const res = await WorkOrderStore.recordPayment(order.id, payAmount, payMethod);
       if (res.success) {
+        toast.success(actionMessages.workOrder.paymentRecorded(payAmount));
         onOrderUpdated();
         setIsRecordingPayment(false);
         setPayAmount(0);
       } else {
-        setActionError(res.error || "Gagal mencatat pembayaran");
+        const msg = res.error || "Gagal mencatat pembayaran";
+        toast.error(msg);
+        setActionError(msg);
       }
     } catch (e: any) {
-      setActionError(e.message || "Gagal mencatat pembayaran");
+      const msg = e.message || "Gagal mencatat pembayaran";
+      toast.error(msg);
+      setActionError(msg);
     } finally {
       setIsSubmittingPayment(false);
     }
@@ -176,15 +171,14 @@ export default function WorkOrderDetailDialog({
                 size="sm"
                 variant="outline"
                 onClick={() => onPrintRequest(order)}
-                className="gap-1.5 text-xs font-semibold"
+                className="text-xs font-semibold"
               >
-                <Printer className="h-4 w-4" />
-                <span>Cetak Nota / Perintah Kerja</span>
+                Cetak Nota / PK
               </Button>
               <Button
                 size="sm"
                 variant="outline"
-                className="gap-1.5 text-xs font-semibold text-emerald-700 hover:text-emerald-800"
+                className="text-xs font-semibold text-emerald-700 hover:text-emerald-800"
                 asChild
               >
                 <a
@@ -192,8 +186,7 @@ export default function WorkOrderDetailDialog({
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Phone className="h-4 w-4" />
-                  <span>Kirim WhatsApp</span>
+                  Kirim WhatsApp
                 </a>
               </Button>
             </div>
@@ -202,9 +195,8 @@ export default function WorkOrderDetailDialog({
 
         <div className="p-6 space-y-6 text-sm">
           {actionError && (
-            <div className="bg-destructive/10 border border-destructive/20 text-destructive text-xs p-3 rounded-lg flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>{actionError}</span>
+            <div className="bg-red-50 border border-red-200 text-red-600 text-xs p-3 rounded-lg">
+              {actionError}
             </div>
           )}
 
@@ -240,31 +232,26 @@ export default function WorkOrderDetailDialog({
 
           {/* CANCELLATION NOTICE IF CANCELLED */}
           {order.status === "cancelled" && (
-            <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 text-destructive flex items-start gap-3">
-              <Ban className="h-5 w-5 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-bold text-sm">Perintah Kerja Telah Dibatalkan</p>
-                <p className="text-xs mt-0.5">
-                  Alasan Pembatalan:{" "}
-                  <span className="font-medium underline">
-                    {order.cancellation_reason || "Tidak ada keterangan"}
-                  </span>
-                </p>
-              </div>
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+              <p className="font-semibold text-sm">Perintah Kerja Telah Dibatalkan</p>
+              <p className="text-xs mt-0.5">
+                Alasan Pembatalan:{" "}
+                <span className="font-medium underline">
+                  {order.cancellation_reason || "Tidak ada keterangan"}
+                </span>
+              </p>
             </div>
           )}
 
           {/* CUSTOMER & VEHICLE INFO */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="bg-card border border-border rounded-xl p-4 space-y-2">
-              <h4 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-1.5">
-                <User className="h-3.5 w-3.5 text-primary" />
-                <span>Pelanggan</span>
+              <h4 className="text-xs font-bold uppercase text-muted-foreground">
+                Pelanggan
               </h4>
               <p className="font-bold text-foreground text-base">{order.customer_name}</p>
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <Phone className="h-3 w-3 text-emerald-600" />
-                <span>{order.customer_phone}</span>
+              <p className="text-xs text-muted-foreground">
+                {order.customer_phone}
               </p>
               {order.customer_address && (
                 <p className="text-xs text-muted-foreground">{order.customer_address}</p>
@@ -272,16 +259,15 @@ export default function WorkOrderDetailDialog({
             </div>
 
             <div className="bg-card border border-border rounded-xl p-4 space-y-2">
-              <h4 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-1.5">
-                <Car className="h-3.5 w-3.5 text-primary" />
-                <span>Kendaraan Motor & Mekanik</span>
+              <h4 className="text-xs font-bold uppercase text-muted-foreground">
+                Kendaraan Motor & Mekanik
               </h4>
               <div className="flex items-center gap-2">
                 <span className="bg-muted px-2 py-0.5 rounded font-mono font-bold text-sm text-foreground">
                   {order.plate_number}
                 </span>
                 <span className="font-semibold text-sm">
-                  {order.vehicle_brand} {order.vehicle_model} ({order.vehicle_year || 2023})
+                  {order.vehicle_brand} {order.vehicle_model}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground">
@@ -331,9 +317,8 @@ export default function WorkOrderDetailDialog({
 
           {/* ITEMS BREAKDOWN */}
           <div className="bg-card border border-border rounded-xl p-4 space-y-3">
-            <h4 className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-1.5">
-              <Wrench className="h-3.5 w-3.5 text-primary" />
-              <span>Rincian Jasa & Sparepart Terpasang</span>
+            <h4 className="text-xs font-bold uppercase text-muted-foreground">
+              Rincian Jasa & Sparepart Terpasang
             </h4>
 
             <div className="overflow-x-auto rounded-lg border border-border">
@@ -471,10 +456,9 @@ export default function WorkOrderDetailDialog({
                       setPayAmount(sisaBayar);
                       setIsRecordingPayment(true);
                     }}
-                    className="gap-1.5 bg-primary text-white font-semibold"
+                    className="bg-primary text-white font-semibold"
                   >
-                    <CreditCard className="h-4 w-4" />
-                    <span>+ Catat Pembayaran</span>
+                    + Catat Pembayaran
                   </Button>
                 </div>
               ) : (
@@ -547,10 +531,9 @@ export default function WorkOrderDetailDialog({
                 variant="destructive"
                 size="sm"
                 onClick={() => onCancelRequest(order)}
-                className="gap-1.5 text-xs font-semibold"
+                className="text-xs font-semibold"
               >
-                <Ban className="h-3.5 w-3.5" />
-                <span>Batalkan PK</span>
+                Batalkan PK
               </Button>
             )}
           </div>
@@ -561,10 +544,9 @@ export default function WorkOrderDetailDialog({
               variant="outline"
               size="sm"
               onClick={() => onEdit(order)}
-              className="gap-1.5 text-xs font-semibold"
+              className="text-xs font-semibold"
             >
-              <Edit className="h-3.5 w-3.5" />
-              <span>Edit Perintah Kerja</span>
+              Edit Perintah Kerja
             </Button>
             <Button
               type="button"

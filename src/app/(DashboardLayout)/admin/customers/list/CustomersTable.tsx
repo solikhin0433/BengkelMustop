@@ -54,8 +54,8 @@ export default function CustomersTable({
             {isLoading ? (
               <TableLoading
                 colSpan={7}
-                title="Memuat Master Data Pelanggan..."
-                subtitle="Menghubungkan ke database Supabase Bengkel_Mustop"
+                title="Memeriksa data..."
+                subtitle="Memuat data pelanggan"
                 size="md"
               />
             ) : customers.length === 0 ? (
@@ -65,7 +65,7 @@ export default function CustomersTable({
                     <Users className="h-9 w-9 text-muted-foreground/50" />
                     <p className="font-semibold text-foreground text-sm">
                       {allCount === 0
-                        ? "Belum ada data pelanggan di database"
+                        ? "Belum ada data pelanggan"
                         : "Tidak ada pelanggan yang cocok dengan pencarian"}
                     </p>
                     <p className="text-xs text-muted-foreground text-center">

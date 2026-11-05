@@ -1,7 +1,6 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Bike, Save, X, AlertTriangle } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -32,9 +31,6 @@ export default function CustomerVehicleDialog({
   const [plateNumber, setPlateNumber] = useState("");
   const [brand, setBrand] = useState("Honda");
   const [model, setModel] = useState("");
-  const [productionYear, setProductionYear] = useState<number | string>("");
-  const [engineCapacity, setEngineCapacity] = useState("");
-  const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
@@ -43,9 +39,6 @@ export default function CustomerVehicleDialog({
       setPlateNumber("");
       setBrand("Honda");
       setModel("");
-      setProductionYear("");
-      setEngineCapacity("");
-      setNotes("");
       setFormError("");
     }
   }, [open, customer]);
@@ -56,6 +49,11 @@ export default function CustomerVehicleDialog({
 
     if (!plateNumber.trim()) {
       setFormError("Nomor plat motor wajib diisi");
+      return;
+    }
+
+    if (!model.trim()) {
+      setFormError("Tipe / Model motor wajib diisi");
       return;
     }
 
@@ -70,9 +68,6 @@ export default function CustomerVehicleDialog({
           plate_number: plateNumber.trim().toUpperCase(),
           brand: brand.trim() || "Lainnya",
           model: model.trim() || "Motor",
-          production_year: Number(productionYear) || null,
-          engine_capacity: engineCapacity.trim() || null,
-          notes: notes.trim() || null,
         }),
       });
 
@@ -95,12 +90,7 @@ export default function CustomerVehicleDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-base">
-            <div className="p-2 rounded-lg bg-success/10 text-success">
-              <Bike className="w-5 h-5" />
-            </div>
-            <span>Tambah Motor Pelanggan</span>
-          </DialogTitle>
+          <DialogTitle className="text-base font-semibold">Tambah Motor Pelanggan</DialogTitle>
           <DialogDescription className="text-xs">
             Daftarkan motor baru untuk pemilik:{" "}
             <strong className="text-foreground">{customer?.name}</strong>
@@ -109,9 +99,8 @@ export default function CustomerVehicleDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4 py-2">
           {formError && (
-            <div className="p-3 text-xs bg-lighterror text-error rounded-md flex items-center gap-2 border border-error/20">
-              <AlertTriangle className="h-4 w-4 shrink-0" />
-              <span>{formError}</span>
+            <div className="p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md">
+              {formError}
             </div>
           )}
 
@@ -132,7 +121,7 @@ export default function CustomerVehicleDialog({
 
             <div className="space-y-1.5">
               <Label htmlFor="veh-brand" className="text-xs font-semibold">
-                Merk Motor
+                Merek Motor
               </Label>
               <select
                 id="veh-brand"
@@ -150,63 +139,34 @@ export default function CustomerVehicleDialog({
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="veh-model" className="text-xs font-semibold">
-                Tipe / Model Motor
-              </Label>
-              <Input
-                id="veh-model"
-                placeholder="Misal: Vario 160, NMAX"
-                value={model}
-                onChange={(e) => setModel(e.target.value)}
-                className="h-9 text-xs"
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="veh-year" className="text-xs font-semibold">
-                Tahun Produksi
-              </Label>
-              <Input
-                id="veh-year"
-                type="number"
-                placeholder="Misal: 2023"
-                value={productionYear}
-                onChange={(e) => setProductionYear(e.target.value)}
-                className="h-9 font-mono text-xs"
-              />
-            </div>
-          </div>
-
           <div className="space-y-1.5">
-            <Label htmlFor="veh-notes" className="text-xs font-semibold">
-              Keterangan / Warna Motor
+            <Label htmlFor="veh-model" className="text-xs font-semibold">
+              Tipe / Model Motor <span className="text-error">*</span>
             </Label>
             <Input
-              id="veh-notes"
-              placeholder="Misal: Warna hitam doff, ban tubeless"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
+              id="veh-model"
+              placeholder="Misal: Vario 160, NMAX, Beat FI"
+              value={model}
+              onChange={(e) => setModel(e.target.value)}
+              required
               className="h-9 text-xs"
             />
           </div>
 
-          <DialogFooter className="gap-2 pt-2">
+          <DialogFooter className="gap-2 pt-4">
             <Button
               type="button"
               variant="outline"
               disabled={isSaving}
               onClick={() => onOpenChange(false)}
-              className="h-9 text-xs"
+              className="h-9 text-sm"
             >
-              <X className="h-3.5 w-3.5 mr-1" />
               Batal
             </Button>
             <Button
               type="submit"
               disabled={isSaving}
-              className="h-9 bg-primary hover:bg-primaryemphasis text-white font-semibold text-xs gap-1.5"
+              className="h-9 bg-primary hover:bg-primaryemphasis text-white font-semibold text-sm"
             >
               {isSaving ? (
                 <>
@@ -214,10 +174,7 @@ export default function CustomerVehicleDialog({
                   <span>Menyimpan...</span>
                 </>
               ) : (
-                <>
-                  <Save className="h-3.5 w-3.5" />
-                  <span>Daftarkan Motor</span>
-                </>
+                <span>Daftarkan Motor</span>
               )}
             </Button>
           </DialogFooter>

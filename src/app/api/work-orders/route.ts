@@ -80,7 +80,6 @@ export async function GET() {
         plate_number: veh.plate_number || "-",
         vehicle_brand: veh.brand || "-",
         vehicle_model: veh.model || "-",
-        vehicle_year: veh.production_year,
         current_km: undefined,
         received_at: formatWIB(row.received_at),
         completed_at: row.completed_at ? formatWIB(row.completed_at) : undefined,
@@ -168,7 +167,6 @@ export async function POST(request: Request) {
           plate_number_normalized: plateNorm,
           brand: detectedBrand,
           model: modelName,
-          production_year: body.new_year ? Number(body.new_year) : null,
         })
         .select()
         .single();

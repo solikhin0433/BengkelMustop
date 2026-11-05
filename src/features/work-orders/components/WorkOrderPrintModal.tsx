@@ -10,7 +10,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Printer, X, Wrench } from "lucide-react";
 import { WorkOrder } from "../types";
 
 interface WorkOrderPrintModalProps {
@@ -47,10 +46,9 @@ export default function WorkOrderPrintModal({
           <Button
             size="sm"
             onClick={handlePrint}
-            className="gap-1.5 bg-primary text-white font-semibold h-8 text-xs shadow"
+            className="bg-primary text-white font-semibold h-8 text-xs shadow"
           >
-            <Printer className="h-4 w-4" />
-            <span>Cetak / Print Sekarang</span>
+            Cetak Dokumen
           </Button>
         </DialogHeader>
 
@@ -59,8 +57,7 @@ export default function WorkOrderPrintModal({
           {/* Header Bengkel */}
           <div className="flex items-start justify-between border-b-2 border-black pb-4">
             <div>
-              <div className="flex items-center gap-2">
-                <Wrench className="h-6 w-6 text-black" />
+              <div>
                 <h2 className="text-xl font-extrabold tracking-tight">BENGKEL_MUSTOP MOTOR</h2>
               </div>
               <p className="text-xs text-gray-700 mt-1">
@@ -232,16 +229,14 @@ export default function WorkOrderPrintModal({
 
         <DialogFooter className="p-4 border-t border-border bg-muted/20 print:hidden flex items-center justify-end gap-2">
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
-            <X className="h-4 w-4 mr-1" />
             Tutup
           </Button>
           <Button
             size="sm"
             onClick={handlePrint}
-            className="gap-1.5 bg-primary text-white font-semibold"
+            className="bg-primary text-white font-semibold"
           >
-            <Printer className="h-4 w-4" />
-            <span>Cetak Dokumen</span>
+            Cetak Dokumen
           </Button>
         </DialogFooter>
       </DialogContent>

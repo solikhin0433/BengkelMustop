@@ -4,6 +4,7 @@ import { DM_Sans } from 'next/font/google'
 import './css/globals.css'
 import { ThemeProvider } from '@/components/theme-provider'
 import ServiceWorkerRegister from '@/app/components/service-worker/ServiceWorkerRegister'
+import Toaster from '@/components/ui/toaster'
 
 const dmSans = DM_Sans({
   subsets: ['latin'],
@@ -36,6 +37,7 @@ export default function RootLayout({
           disableTransitionOnChange>
           <ServiceWorkerRegister />
           {children}
+          <Toaster />
         </ThemeProvider>
       </body>
     </html>

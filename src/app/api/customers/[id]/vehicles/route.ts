@@ -15,7 +15,7 @@ export async function POST(
     const sb = await getOwnerClient();
     const body = await request.json();
 
-    const { plate_number, brand, model, production_year, engine_capacity, notes } = body;
+    const { plate_number, brand, model } = body;
 
     if (!plate_number || !plate_number.trim()) {
       return NextResponse.json({ error: "Nomor plat motor wajib diisi" }, { status: 400 });
@@ -32,9 +32,6 @@ export async function POST(
         plate_number_normalized: normPlate,
         brand: brand?.trim() || "Lainnya",
         model: model?.trim() || "Motor",
-        production_year: Number(production_year) || null,
-        engine_capacity: engine_capacity?.trim() || null,
-        notes: notes?.trim() || null,
       })
       .select()
       .single();

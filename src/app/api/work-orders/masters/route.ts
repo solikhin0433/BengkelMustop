@@ -8,7 +8,7 @@ export async function GET() {
 
     const [custRes, vehRes, srvRes, prtRes] = await Promise.all([
       sb.from("m_pelanggan").select("id, name, phone, address").is("archived_at", null).order("name"),
-      sb.from("m_kendaraan").select("id, customer_id, plate_number, brand, model, production_year").is("archived_at", null).order("plate_number"),
+      sb.from("m_kendaraan").select("id, customer_id, plate_number, brand, model").is("archived_at", null).order("plate_number"),
       sb.from("m_jasa").select("id, name, code, default_price, description").eq("is_active", true).is("archived_at", null).order("sort_order"),
       sb.from("m_sparepart").select("id, name, sku, unit, selling_price, stock_quantity").eq("is_active", true).is("archived_at", null).order("name"),
     ]);
