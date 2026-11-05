@@ -1,287 +1,232 @@
 "use client";
 
-import React, { useState } from "react";
-import {
-  Box,
-  Search,
-  Plus,
-  AlertTriangle,
-  ArrowDownUp,
-  PackageCheck,
-  CheckCircle2,
-  TrendingDown,
-  Edit2,
-} from "lucide-react";
-import CardBox from "@/app/components/shared/CardBox";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import BreadcrumbComp from "../../layout/shared/breadcrumb/BreadcrumbComp";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import InventoryKPI from "./list/InventoryKPI";
+import InventoryFilter from "./list/InventoryFilter";
+import InventoryStockTable from "./list/InventoryStockTable";
+import InventoryMutationTable from "./list/InventoryMutationTable";
+import StockMutationDialog from "./form/StockMutationDialog";
+import { SparepartItem, SparepartCategory, StockMutationItem, InventorySummary } from "@/types/master";
 
 const BCrumb = [
-  {
-    to: "/admin",
-    title: "Dashboard",
-  },
-  {
-    title: "Suku Cadang & Stok",
-  },
+  { to: "/admin", title: "Dashboard" },
+  { title: "Stok & Mutasi" },
 ];
 
 export default function InventoryPage() {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterCategory, setFilterCategory] = useState("semua");
+  const [activeTab, setActiveTab] = useState<"stock" | "mutations">("stock");
 
-  const [parts] = useState([
-    {
-      code: "AHM-MPX2-08",
-      name: "Oli AHM MPX 2 Matic 0.8L",
-      brand: "AHM Honda",
-      category: "oli",
-      stock: 24,
-      minStock: 10,
-      buyPrice: 42000,
-      sellPrice: 54000,
-      location: "Rak A-01",
-    },
-    {
-      code: "YML-SM-1L",
-      name: "Oli Yamalube Super Matic 10W-40 1L",
-      brand: "Yamaha",
-      category: "oli",
-      stock: 3, // Kritis
-      minStock: 8,
-      buyPrice: 53000,
-      sellPrice: 68000,
-      location: "Rak A-02",
-    },
-    {
-      code: "HGP-23100-KZR",
-      name: "V-Belt Kit Vario 125/150",
-      brand: "Honda Genuine Parts",
-      category: "cvt",
-      stock: 5,
-      minStock: 4,
-      buyPrice: 125000,
-      sellPrice: 165000,
-      location: "Rak B-04",
-    },
-    {
-      code: "YGP-2DP-F5805",
-      name: "Kampas Rem Depan NMAX/Aerox",
-      brand: "Yamaha Genuine Parts",
-      category: "rem",
-      stock: 2, // Kritis
-      minStock: 5,
-      buyPrice: 46000,
-      sellPrice: 62000,
-      location: "Rak C-02",
-    },
-    {
-      code: "NGK-CPR9EA-9",
-      name: "Busi NGK Standar Vario / Beat / NMAX",
-      brand: "NGK Spark Plugs",
-      category: "kelistrikan",
-      stock: 18,
-      minStock: 10,
-      buyPrice: 18000,
-      sellPrice: 25000,
-      location: "Rak D-01",
-    },
-    {
-      code: "GS-GTZ5S-MF",
-      name: "Aki Kering GS Astra GTZ-5S 12V 3.5Ah",
-      brand: "GS Astra",
-      category: "kelistrikan",
-      stock: 6,
-      minStock: 5,
-      buyPrice: 165000,
-      sellPrice: 210000,
-      location: "Rak E-01",
-    },
-    {
-      code: "MXS-S98-9080",
-      name: "Ban Tubeless Maxxis Victra S98 90/80-14",
-      brand: "Maxxis",
-      category: "ban",
-      stock: 4,
-      minStock: 4,
-      buyPrice: 215000,
-      sellPrice: 265000,
-      location: "Rak F-Ban",
-    },
-  ]);
-
-  const filtered = parts.filter((p) => {
-    const matchesSearch =
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.brand.toLowerCase().includes(searchTerm.toLowerCase());
-
-    const matchesCat =
-      filterCategory === "semua" || p.category === filterCategory;
-
-    return matchesSearch && matchesCat;
+  // Data states
+  const [parts, setParts] = useState<SparepartItem[]>([]);
+  const [categories, setCategories] = useState<SparepartCategory[]>([]);
+  const [mutations, setMutations] = useState<StockMutationItem[]>([]);
+  const [summary, setSummary] = useState<InventorySummary>({
+    totalItems: 0,
+    totalAssetValue: 0,
+    lowStockCount: 0,
+    outOfStockCount: 0,
+    mutationsTodayCount: 0,
+    itemsInToday: 0,
+    itemsOutToday: 0,
   });
 
+  const [isLoadingParts, setIsLoadingParts] = useState(true);
+  const [isLoadingMutations, setIsLoadingMutations] = useState(true);
+  const [isLoadingSummary, setIsLoadingSummary] = useState(true);
+
+  // Filter states
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+  const [stockStatus, setStockStatus] = useState<"all" | "in_stock" | "low_stock" | "out_of_stock">("all");
+  const [mutationTypeFilter, setMutationTypeFilter] = useState("all");
+
+  // Mutation Dialog
+  const [isMutationDialogOpen, setIsMutationDialogOpen] = useState(false);
+  const [selectedPartForMutation, setSelectedPartForMutation] = useState<SparepartItem | null>(null);
+
+  // 1. Fetch Parts & Categories
+  const fetchParts = useCallback(async () => {
+    setIsLoadingParts(true);
+    try {
+      const [partsRes, catsRes] = await Promise.all([
+        fetch("/api/parts", { cache: "no-store" }),
+        fetch("/api/parts/categories", { cache: "no-store" }),
+      ]);
+
+      const partsJson = await partsRes.json();
+      const catsJson = await catsRes.json();
+
+      if (partsRes.ok) setParts(partsJson.data || []);
+      if (catsRes.ok) setCategories(catsJson.data || []);
+    } catch (err) {
+      console.error("Error fetching parts for inventory:", err);
+    } finally {
+      setIsLoadingParts(false);
+    }
+  }, []);
+
+  // 2. Fetch Mutations
+  const fetchMutations = useCallback(async () => {
+    setIsLoadingMutations(true);
+    try {
+      const res = await fetch("/api/inventory/mutations?limit=100", { cache: "no-store" });
+      const json = await res.json();
+      if (res.ok) setMutations(json.data || []);
+    } catch (err) {
+      console.error("Error fetching mutations:", err);
+    } finally {
+      setIsLoadingMutations(false);
+    }
+  }, []);
+
+  // 3. Fetch KPI Summary
+  const fetchSummary = useCallback(async () => {
+    setIsLoadingSummary(true);
+    try {
+      const res = await fetch("/api/inventory/summary", { cache: "no-store" });
+      const json = await res.json();
+      if (res.ok && json.data) setSummary(json.data);
+    } catch (err) {
+      console.error("Error fetching inventory summary:", err);
+    } finally {
+      setIsLoadingSummary(false);
+    }
+  }, []);
+
+  const refreshAll = useCallback(() => {
+    fetchParts();
+    fetchMutations();
+    fetchSummary();
+  }, [fetchParts, fetchMutations, fetchSummary]);
+
+  useEffect(() => {
+    refreshAll();
+  }, [refreshAll]);
+
+  // Client-side filtering for Stock Table
+  const filteredParts = useMemo(() => {
+    return parts.filter((part) => {
+      const q = searchTerm.toLowerCase();
+      const matchSearch =
+        (part.name || "").toLowerCase().includes(q) ||
+        (part.sku || "").toLowerCase().includes(q) ||
+        (part.notes || "").toLowerCase().includes(q);
+
+      const matchCategory =
+        selectedCategory === "all" || part.category_id === selectedCategory;
+
+      let matchStock = true;
+      const stock = Number(part.stock_quantity) || 0;
+      const minStock = Number(part.stock_minimum) || 0;
+
+      if (stockStatus === "out_of_stock") {
+        matchStock = stock <= 0;
+      } else if (stockStatus === "low_stock") {
+        matchStock = stock > 0 && stock <= minStock;
+      } else if (stockStatus === "in_stock") {
+        matchStock = stock > minStock;
+      }
+
+      return matchSearch && matchCategory && matchStock;
+    });
+  }, [parts, searchTerm, selectedCategory, stockStatus]);
+
+  // Client-side filtering for Mutations Table
+  const filteredMutations = useMemo(() => {
+    return mutations.filter((m) => {
+      const q = searchTerm.toLowerCase();
+      const partName = (m.part?.name || "").toLowerCase();
+      const partSku = (m.part?.sku || "").toLowerCase();
+      const reason = (m.reason || "").toLowerCase();
+
+      const matchSearch =
+        partName.includes(q) || partSku.includes(q) || reason.includes(q);
+
+      let matchType = true;
+      if (mutationTypeFilter === "in") {
+        matchType = ["purchase_in", "adjustment_in", "return_in", "reversal_in"].includes(m.movement_type);
+      } else if (mutationTypeFilter === "out") {
+        matchType = ["service_out", "adjustment_out", "reversal_out"].includes(m.movement_type);
+      } else if (mutationTypeFilter !== "all") {
+        matchType = m.movement_type === mutationTypeFilter;
+      }
+
+      return matchSearch && matchType;
+    });
+  }, [mutations, searchTerm, mutationTypeFilter]);
+
+  const handleMutatePart = (part: SparepartItem) => {
+    setSelectedPartForMutation(part);
+    setIsMutationDialogOpen(true);
+  };
+
+  const handleOpenGeneralMutation = () => {
+    setSelectedPartForMutation(null);
+    setIsMutationDialogOpen(true);
+  };
+
   return (
-    <>
-      <BreadcrumbComp title="Manajemen Suku Cadang & Stok" items={BCrumb} />
+    <div className="space-y-6 pb-12">
+      <BreadcrumbComp title="Stok & Mutasi Suku Cadang" items={BCrumb} />
 
-      <div className="space-y-6">
-        {/* KPI Summary Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          <CardBox className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Total Jenis Part
-            </p>
-            <h3 className="text-2xl font-bold text-foreground">128 SKU</h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              Oli, CVT, Rem, Ban, Kelistrikan
-            </p>
-          </CardBox>
+      {/* KPI STATS */}
+      <InventoryKPI
+        totalItems={summary.totalItems}
+        totalAssetValue={summary.totalAssetValue}
+        lowStockCount={summary.lowStockCount}
+        outOfStockCount={summary.outOfStockCount}
+        mutationsTodayCount={summary.mutationsTodayCount}
+        itemsInToday={summary.itemsInToday}
+        itemsOutToday={summary.itemsOutToday}
+        isLoading={isLoadingSummary}
+      />
 
-          <CardBox className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Estimasi Nilai Aset Stok
-            </p>
-            <h3 className="text-2xl font-bold text-primary">Rp 28.450.000</h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              Berdasarkan harga pokok beli
-            </p>
-          </CardBox>
+      {/* FILTER & TABS */}
+      <InventoryFilter
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        stockStatus={stockStatus}
+        setStockStatus={setStockStatus}
+        mutationTypeFilter={mutationTypeFilter}
+        setMutationTypeFilter={setMutationTypeFilter}
+        categories={categories}
+        isLoading={isLoadingParts || isLoadingMutations}
+        onRefresh={refreshAll}
+        onOpenMutationDialog={handleOpenGeneralMutation}
+      />
 
-          <CardBox className="p-5 border-error/30 bg-lighterror/10">
-            <p className="text-xs font-semibold text-error mb-1">
-              Stok Menipis (Di Bawah Min)
-            </p>
-            <h3 className="text-2xl font-bold text-error">2 Item Kritis</h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              Oli Yamalube & Kampas NMAX
-            </p>
-          </CardBox>
+      {/* TAB CONTENT: STOCK AVAILABILITY TABLE */}
+      {activeTab === "stock" && (
+        <InventoryStockTable
+          parts={filteredParts}
+          allCount={parts.length}
+          isLoading={isLoadingParts}
+          onMutatePart={handleMutatePart}
+        />
+      )}
 
-          <CardBox className="p-5">
-            <p className="text-xs font-medium text-muted-foreground mb-1">
-              Mutasi Keluar Hari Ini
-            </p>
-            <h3 className="text-2xl font-bold text-success">18 Pcs</h3>
-            <p className="text-xs text-muted-foreground mt-1">
-              Dipasang di Perintah Kerja
-            </p>
-          </CardBox>
-        </div>
+      {/* TAB CONTENT: MUTATION LEDGER TABLE */}
+      {activeTab === "mutations" && (
+        <InventoryMutationTable
+          mutations={filteredMutations}
+          allCount={mutations.length}
+          isLoading={isLoadingMutations}
+        />
+      )}
 
-        {/* Action Controls */}
-        <CardBox className="p-5">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex flex-1 items-center gap-3 max-w-md">
-              <div className="relative w-full">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Cari kode part, nama sparepart, merk..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-9 h-10 text-sm"
-                />
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Button className="gap-2 bg-primary hover:bg-primaryemphasis text-white h-10">
-                <Plus className="h-4 w-4" />
-                <span>+ Tambah Sparepart Baru</span>
-              </Button>
-            </div>
-          </div>
-        </CardBox>
-
-        {/* Spareparts Table */}
-        <CardBox className="p-6">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <thead className="bg-muted/50 text-xs font-semibold uppercase text-muted-foreground border-b border-border">
-                <tr>
-                  <th className="py-3 px-4">Kode & Nama Sparepart</th>
-                  <th className="py-3 px-4">Brand & Kategori</th>
-                  <th className="py-3 px-4">Posisi Rak</th>
-                  <th className="py-3 px-4">Stok Saat Ini</th>
-                  <th className="py-3 px-4">Harga Beli</th>
-                  <th className="py-3 px-4">Harga Jual</th>
-                  <th className="py-3 px-4 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filtered.map((p) => {
-                  const isCritical = p.stock <= p.minStock;
-
-                  return (
-                    <tr key={p.code} className="hover:bg-muted/30 transition-colors">
-                      <td className="py-4 px-4">
-                        <span className="font-mono text-xs font-semibold text-primary block">
-                          {p.code}
-                        </span>
-                        <p className="font-semibold text-foreground text-sm mt-0.5">
-                          {p.name}
-                        </p>
-                      </td>
-
-                      <td className="py-4 px-4 text-xs">
-                        <span className="font-medium text-foreground block">
-                          {p.brand}
-                        </span>
-                        <span className="text-muted-foreground capitalize">
-                          {p.category}
-                        </span>
-                      </td>
-
-                      <td className="py-4 px-4 font-mono text-xs text-muted-foreground">
-                        {p.location}
-                      </td>
-
-                      <td className="py-4 px-4">
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`font-bold text-sm ${
-                              isCritical ? "text-error" : "text-foreground"
-                            }`}
-                          >
-                            {p.stock} Pcs
-                          </span>
-                          {isCritical && (
-                            <Badge variant="error" className="text-[10px]">
-                              Menipis (Min: {p.minStock})
-                            </Badge>
-                          )}
-                        </div>
-                      </td>
-
-                      <td className="py-4 px-4 text-xs font-medium text-muted-foreground">
-                        Rp {p.buyPrice.toLocaleString("id-ID")}
-                      </td>
-
-                      <td className="py-4 px-4 text-xs font-bold text-foreground">
-                        Rp {p.sellPrice.toLocaleString("id-ID")}
-                      </td>
-
-                      <td className="py-4 px-4 text-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-8 text-xs gap-1"
-                        >
-                          <ArrowDownUp className="h-3.5 w-3.5" />
-                          <span>Mutasi</span>
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </CardBox>
-      </div>
-    </>
+      {/* MUTATION DIALOG FORM */}
+      <StockMutationDialog
+        open={isMutationDialogOpen}
+        onOpenChange={setIsMutationDialogOpen}
+        parts={parts}
+        selectedPart={selectedPartForMutation}
+        onSuccess={refreshAll}
+      />
+    </div>
   );
 }

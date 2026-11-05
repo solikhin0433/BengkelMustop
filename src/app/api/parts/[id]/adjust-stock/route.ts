@@ -40,7 +40,7 @@ export async function POST(
     if (type === "add") {
       newStock += qty;
       delta = qty;
-      movementType = "manual_in";
+      movementType = "adjustment_in";
     } else if (type === "subtract") {
       if (newStock < qty) {
         return NextResponse.json(
@@ -50,11 +50,11 @@ export async function POST(
       }
       newStock -= qty;
       delta = -qty;
-      movementType = "manual_out";
+      movementType = "adjustment_out";
     } else if (type === "set") {
       delta = qty - newStock;
       newStock = qty;
-      movementType = delta >= 0 ? "opname_in" : "opname_out";
+      movementType = delta >= 0 ? "adjustment_in" : "adjustment_out";
     }
 
     // Update stok di m_sparepart
@@ -77,6 +77,24 @@ export async function POST(
     if (updateErr) {
       console.error("Update stock error:", updateErr);
       return NextResponse.json({ error: updateErr.message }, { status: 500 });
+    }
+
+    // Catat riwayat ke tr_mutasi_stok
+    if (delta !== 0) {
+      try {
+        await sb.from("tr_mutasi_stok").insert([
+          {
+            part_id: id,
+            movement_type: movementType,
+            quantity_delta: delta,
+            unit_cost: currentPart.average_cost || null,
+            reference_type: "manual_adjustment",
+            reason: reason || "Penyesuaian stok dari katalog",
+          },
+        ]);
+      } catch (logErr) {
+        console.warn("Log mutation error:", logErr);
+      }
     }
 
     return NextResponse.json({

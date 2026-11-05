@@ -73,5 +73,42 @@ export const actionMessages = {
     paymentRecorded: (amount: number) =>
       `Pembayaran senilai Rp ${amount.toLocaleString("id-ID")} berhasil dicatat.`,
   },
+
+  // === 7. PESAN KHUSUS INVENTORI & MUTASI STOK ===
+  inventory: {
+    mutationRecorded: (partName: string, delta: number, unit = "pcs") =>
+      `Mutasi stok "${partName}" (${delta > 0 ? "+" : ""}${delta} ${unit}) berhasil dicatat.`,
+    receiptCreated: (receiptNumber: string) =>
+      `Penerimaan stok ${receiptNumber} berhasil disimpan.`,
+  },
+
+  // === 8. PESAN KHUSUS KASIR & PEMBAYARAN ===
+  payment: {
+    recorded: (receiptNo: string, amount: number) =>
+      `Pembayaran ${receiptNo} sebesar Rp ${amount.toLocaleString("id-ID")} berhasil diproses.`,
+    receiptIssued: (receiptNo: string) =>
+      `Kuitansi pembayaran ${receiptNo} siap dicetak.`,
+  },
+
+  // === 9. PESAN KHUSUS PIUTANG & BON ===
+  receivable: {
+    paymentRecorded: (woNumber: string, amount: number) =>
+      `Pembayaran bon ${woNumber} sebesar Rp ${amount.toLocaleString("id-ID")} berhasil dicatat.`,
+    reminderSent: (customerName: string) =>
+      `Pesan pengingat bon untuk ${customerName} berhasil disiapkan.`,
+  },
+
+  // === 10. PESAN KHUSUS PENGELUARAN BENGKEL ===
+  expense: {
+    created: "Pengeluaran bengkel baru berhasil dicatat.",
+    deleted: "Catatan pengeluaran berhasil dihapus.",
+    categoryCreated: (name: string) =>
+      `Kategori pengeluaran "${name}" berhasil ditambahkan.`,
+  },
+
+  // === 11. PESAN KHUSUS PENGATURAN BENGKEL ===
+  settings: {
+    saved: "Pengaturan profil bengkel berhasil disimpan.",
+  },
 };
 
